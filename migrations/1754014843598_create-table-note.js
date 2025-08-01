@@ -1,14 +1,16 @@
 /**
  * @type {import('node-pg-migrate').ColumnDefinitions | undefined}
  */
-module.exports const shorthands = undefined;
+//menghapus const
+module.exports.shorthands = undefined;
 
 /**
  * @param pgm {import('node-pg-migrate').MigrationBuilder}
  * @param run {() => void | undefined}
  * @returns {Promise<void> | void}
  */
-module.exports const up = (pgm) => {
+//menghapus const
+module.exports.up = (pgm) => {
   pgm.createTable("notes", {
     id: {
       type: "VARCHAR(50)",
@@ -42,6 +44,8 @@ module.exports const up = (pgm) => {
  * @param run {() => void | undefined}
  * @returns {Promise<void> | void}
  */
-module.exports const down = (pgm) => {
+
+//menghapus const
+module.exports.down = (pgm) => {
   pgm.dropTable("notes");
 };
