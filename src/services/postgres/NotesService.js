@@ -10,14 +10,20 @@ class NotesService {
   // buat constructor dan di dalamnya inisialisasi properti this._pool dengan instance dari package pg.Pool.
   constructor() {
     //ganti pool nya, karna ini mau di deploy
-    this._pool = new Pool();
+    this._pool = new Pool({
+      user: process.env.PGUSER,
+      host: process.env.PGHOST,
+      database: process.env.PGDATABASE,
+      password: process.env.PGPASSWORD,
+      port: process.env.PGPORT,
+    });
     // this._pool = new Pool({ ssl: { rejectUnauthorized: false } });
     // this._pool = new Pool({
     //   connectionString: process.env.DATABASE_URL, // <-- Ini Perubahannya!
     //   // Tambahkan konfigurasi SSL untuk Railway/produksi
-    //   ssl: {
-    //     rejectUnauthorized: false, // Penting untuk koneksi ke Railway/prod jika sertifikat tidak formal
-    //   },
+    //   // ssl: {
+    //   //   rejectUnauthorized: false, // Penting untuk koneksi ke Railway/prod jika sertifikat tidak formal
+    //   // },
     // });
   }
 
