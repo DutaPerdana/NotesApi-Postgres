@@ -10,15 +10,15 @@ class NotesService {
   // buat constructor dan di dalamnya inisialisasi properti this._pool dengan instance dari package pg.Pool.
   constructor() {
     //ganti pool nya, karna ini mau di deploy
-    this._pool = new Pool();
+    // this._pool = new Pool();
     // this._pool = new Pool({ ssl: { rejectUnauthorized: false } });
-    // this._pool = new Pool({
-    //   connectionString: process.env.DATABASE_URL, // <-- Ini Perubahannya!
-    //   // Tambahkan konfigurasi SSL untuk Railway/produksi
-    //   ssl: {
-    //     rejectUnauthorized: false, // Penting untuk koneksi ke Railway/prod jika sertifikat tidak formal
-    //   },
-    // });
+    this._pool = new Pool({
+      connectionString: process.env.DATABASE_URL, // <-- Ini Perubahannya!
+      // Tambahkan konfigurasi SSL untuk Railway/produksi
+      ssl: {
+        rejectUnauthorized: false, // Penting untuk koneksi ke Railway/prod jika sertifikat tidak formal
+      },
+    });
   }
 
   // Buat nama fungsi dan parameter sama persis seperti yang ada pada inMemory -> NotesService yah.
