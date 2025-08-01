@@ -16,7 +16,7 @@ const init = async () => {
     // host: process.env.NODE_ENV !== "production" ? "localhost" : "0.0.0.0",
     // karna sudah ada env kita pakai kode di bawah ini ya
     port: process.env.PORT,
-    host: process.env.HOST,
+    host: "0.0.0.0",
     routes: {
       cors: {
         origin: ["*"],
@@ -53,9 +53,9 @@ const init = async () => {
     return h.continue;
   });
   await server.start();
-  // console.log(`Server berjalan pada ${server.info.uri}`);
+  console.log(`Server berjalan pada ${server.info.uri}`);
   //ubah ketika di deploy
-  console.log(`Server berjalan pada http://${process.env.HOST}:${process.env.PORT}`);
+  // console.log(`Server berjalan pada http://${process.env.HOST}:${process.env.PORT}`);
 };
 
 init();
