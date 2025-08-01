@@ -53,7 +53,9 @@ const init = async () => {
     return h.continue;
   });
   await server.start();
-  console.log(`Server berjalan pada ${server.info.uri}`);
+  // console.log(`Server berjalan pada ${server.info.uri}`);
+  //ubah ketika di deploy
+  console.log(`Server berjalan pada http://${process.env.HOST}:${process.env.PORT}`);
 };
 
 init();
