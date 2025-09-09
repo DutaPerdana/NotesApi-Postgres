@@ -1,9 +1,9 @@
-const { validateNotePayload } = require("../../validator/notes");
-const ClientError = require("../../exceptions/ClientError");
+const { validateNotePayload } = require('../../validator/notes');
+const ClientError = require('../../exceptions/ClientError');
 
 /* eslint-disable class-methods-use-this */
-//karena sudah memakai postgres kita akan
-//menambahkan keyword async pada seluruh fungsi handler dan tambahkan keyword await pada setiap penggunaan fungsi dari service
+// karena sudah memakai postgres kita akan
+// menambahkan keyword async pada seluruh fungsi handler dan tambahkan keyword await pada setiap penggunaan fungsi dari service
 class NotesHandler {
   constructor(service, validator) {
     this._service = service;
@@ -18,13 +18,19 @@ class NotesHandler {
 
   async postNoteHandler(request, h) {
     this._validator.validateNotePayload(request.payload);
-    const { title = "untitled", body, tags } = request.payload;
+    const { title = 'untitled', body, tags } = request.payload;
 
-    const noteId = await this._service.addNote({ title, body, tags });
+    //request auth itu isinya adalah kembalian dari validate pada server.auth.strategy pada serveer.js 
+    const { id: credentialId } = request.auth.credentials;
+    const noteId = await this._service.addNote({
+      title, body, tags, owner: credentialId,
+    });
+
+    // const noteId = await this._service.addNote({ title, body, tags });
 
     const response = h.response({
-      status: "success",
-      message: "Catatan berhasil ditambahkan",
+      status: 'success',
+      message: 'Catatan berhasil ditambahkan',
       data: {
         noteId,
       },
@@ -33,10 +39,14 @@ class NotesHandler {
     return response;
   }
 
-  async getNotesHandler() {
-    const notes = await this._service.getNotes();
+  async getNotesHandler(request) {
+    // const notes = await this._service.getNotes();
+
+    const { id: credentialId } = request.auth.credentials;
+    const notes = await this._service.getNotes(credentialId);
+
     return {
-      status: "success",
+      status: 'success',
       data: {
         notes,
       },
@@ -45,9 +55,13 @@ class NotesHandler {
 
   async getNoteByIdHandler(request, h) {
     const { id } = request.params;
+    const { id: credentialId } = request.auth.credentials;
+    //panggil fungsi verirynote owber sebelum ke service nya
+    await this._service.verifyNoteOwner(id, credentialId);
+
     const note = await this._service.getNoteById(id);
     return {
-      status: "success",
+      status: 'success',
       data: {
         note,
       },
@@ -57,22 +71,30 @@ class NotesHandler {
   async putNoteByIdHandler(request, h) {
     this._validator.validateNotePayload(request.payload);
     const { id } = request.params;
+    const { id: credentialId} = request.auth.credentials;
+    //panggil fungsi verrifynote owner
+    await this._service.verifyNoteOwner(id, credentialId);
+
 
     await this._service.editNoteById(id, request.payload);
 
     return {
-      status: "success",
-      message: "Catatan berhasil diperbarui",
+      status: 'success',
+      message: 'Catatan berhasil diperbarui',
     };
   }
 
   async deleteNoteByIdHandler(request, h) {
     const { id } = request.params;
+    const { id: credentialId } = request.auth.credentials;
+    //panggil fungsi veerify note owner
+    await this._service.verifyNoteOwner(id, credentialId);
+
     await this._service.deleteNoteById(id);
 
     return {
-      status: "success",
-      message: "Catatan berhasil dihapus",
+      status: 'success',
+      message: 'Catatan berhasil dihapus',
     };
   }
 }

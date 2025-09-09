@@ -1,15 +1,16 @@
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable max-len */
-const { Pool } = require("pg");
-const { nanoid } = require("nanoid");
-const InvariantError = require("../../exceptions/InvariantError");
-const { mapDBToModel } = require("../../utils");
-const NotFoundError = require("../../exceptions/NotFoundError");
+const { Pool } = require('pg');
+const { nanoid } = require('nanoid');
+const InvariantError = require('../../exceptions/InvariantError');
+const { mapDBToModel } = require('../../utils');
+const NotFoundError = require('../../exceptions/NotFoundError');
+const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class NotesService {
   // buat constructor dan di dalamnya inisialisasi properti this._pool dengan instance dari package pg.Pool.
   constructor() {
-    //ganti pool nya, karna ini mau di deploy
+    // ganti pool nya, karna ini mau di deploy
     this._pool = new Pool({
       user: process.env.PGUSER,
       host: process.env.PGHOST,
@@ -28,7 +29,7 @@ class NotesService {
   }
 
   // Buat nama fungsi dan parameter sama persis seperti yang ada pada inMemory -> NotesService yah.
-  async addNote({ title, body, tags }) {
+  async addNote({ title, body,tags, owner }) {
     const id = nanoid(16);
     const createdAt = new Date().toISOString();
     const updatedAt = createdAt;
@@ -41,8 +42,8 @@ class NotesService {
     // Di kertas order itu ada instruksi: "Tolong buat pizza ini (INSERT ke notes dengan toping-toping $1 sampai $6).
     //  Setelah selesai, beritahu aku NOMOR ANTRIAN pizza yang baru jadi itu! (RETURNING id)".
     const query = {
-      text: "INSERT INTO notes VALUES($1, $2, $3, $4, $5, $6) RETURNING id",
-      values: [id, title, body, tags, createdAt, updatedAt],
+      text: 'INSERT INTO notes VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+      values: [id, title, body, tags, createdAt, updatedAt, owner],
     };
 
     // Untuk mengeksekusi query yang sudah dibuat, kita gunakan fungsi this._pool.query.
@@ -57,7 +58,7 @@ class NotesService {
 
     // Ketika dapur memberikan konfirmasi (result), kasir memeriksa. Di konfirmasi itu, harus ada NOMOR ANTRIAN pizza yang baru jadi.
     if (!result.rows[0].id) {
-      throw new InvariantError("Catatan gagal ditambahkan");
+      throw new InvariantError('Catatan gagal ditambahkan');
     }
     // Jika nomor antrian ada di konfirmasi (result.rows[0].id), kasir sekarang tahu nomor antrian pizza yang baru jadi.
 
@@ -65,21 +66,26 @@ class NotesService {
     return result.rows[0].id;
   }
 
-  async getNotes() {
-    const result = await this._pool.query("SELECT * FROM notes");
-    //karenna struktur nya beda, dari createdAt menjadi created_at kini kita ubah pakai map yang di setting dari utils index.js
+  async getNotes(owner) {
+    //menambahkan parameter owner
+    const query = {
+      text : 'SELECT * FROM notes WHERE owner = $1', 
+      values : [owner],
+    };
+    const result = await this._pool.query(query);
+    // karenna struktur nya beda, dari createdAt menjadi created_at kini kita ubah pakai map yang di setting dari utils index.js
     return result.rows.map(mapDBToModel);
   }
 
   async getNoteById(id) {
     const query = {
-      text: "SELECT * FROM notes WHERE id = $1",
+      text: 'SELECT * FROM notes WHERE id = $1',
       values: [id],
     };
     const result = await this._pool.query(query);
 
     if (!result.rows.length) {
-      throw new NotFoundError("Catatan tidak ditemukan");
+      throw new NotFoundError('Catatan tidak ditemukan');
     }
 
     return result.rows.map(mapDBToModel)[0];
@@ -88,27 +94,42 @@ class NotesService {
   async editNoteById(id, { title, body, tags }) {
     const updatedAt = new Date().toISOString();
     const query = {
-      text: "UPDATE notes SET title = $1, body = $2, tags = $3, updated_at = $4 WHERE id = $5 RETURNING id",
+      text: 'UPDATE notes SET title = $1, body = $2, tags = $3, updated_at = $4 WHERE id = $5 RETURNING id',
       values: [title, body, tags, updatedAt, id],
     };
 
     const result = await this._pool.query(query);
 
     if (!result.rows.length) {
-      throw new NotFoundError("Gagal memperbarui catatan. Id tidak ditemukan");
+      throw new NotFoundError('Gagal memperbarui catatan. Id tidak ditemukan');
     }
   }
 
   async deleteNoteById(id) {
     const query = {
-      text: "DELETE FROM notes WHERE id = $1 RETURNING id",
+      text: 'DELETE FROM notes WHERE id = $1 RETURNING id',
       values: [id],
     };
 
     const result = await this._pool.query(query);
 
     if (!result.rows.length) {
-      throw new NotFoundError("Catatan gagal dihapus. Id tidak ditemukan");
+      throw new NotFoundError('Catatan gagal dihapus. Id tidak ditemukan');
+    }
+  }
+
+   async verifyNoteOwner(id, owner) {
+    const query = {
+      text: 'SELECT * FROM notes WHERE id = $1',
+      values: [id],
+    };
+    const result = await this._pool.query(query);
+    if (!result.rows.length) {
+      throw new NotFoundError('Catatan tidak ditemukan');
+    }
+    const note = result.rows[0];
+    if (note.owner !== owner) {
+      throw new AuthorizationError('Anda tidak berhak mengakses resource ini');
     }
   }
 }

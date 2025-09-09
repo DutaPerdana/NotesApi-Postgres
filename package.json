@@ -7,26 +7,29 @@
     "start:prod": "NODE_ENV=production node ./src/server.js",
     "prestart": "npm run migrate",
     "start": "node ./src/server.js",
-    "start:dev": "nodemon ./src/server2.js",
+    "start:dev": "nodemon ./src/server.js",
     "lint": "eslint ./src",
     "lint:fix": "eslint ./src --fix",
-    "migrate": "node-pg-migrate up"
+    "migrate": "node-pg-migrate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "eslint": "^8.52.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.29.0",
-    "nodemon": "^3.0.1"
+    "eslint": "^0.6.2",
+    "eslint-config-airbnb-base": "^4.0.2",
+    "eslint-plugin-import": "^1.11.0",
+    "nodemon": "^1.4.1"
   },
   "dependencies": {
-    "@hapi/hapi": "^21.3.2",
-    "dotenv": "^17.2.1",
+    "@hapi/hapi": "^21.4.3",
+    "@hapi/jwt": "^3.2.1",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.2",
     "joi": "^17.13.3",
     "nanoid": "^3.1.20",
-    "node-pg-migrate": "^8.0.3",
+    "node-pg-migrate": "^3.21.1",
+    "pg": "^8.16.3",
     "pq": "^0.0.3"
   }
 }

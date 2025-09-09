@@ -1,49 +1,114 @@
-const Hapi = require("@hapi/hapi");
+const Hapi = require('@hapi/hapi');
 // const routes = require("./routes"); // dihapus karena tidak di gunakan lagi
 // mendaftarkan notes di server hapi
-const notes = require("./api/notes");
+const notes = require('./api/notes');
 // const NotesService = require('./services/inMemory/NotesService');
-//ganti NotesService ke postgres
-const NotesService = require("./services/postgres/NotesService");
-const NotesValidator = require("./validator/notes");
-const ClientError = require("./exceptions/ClientError");
-require("dotenv").config();
+// ganti NotesService ke postgres
+const NotesService = require('./services/postgres/NotesService');
+const NotesValidator = require('./validator/notes');
+const ClientError = require('./exceptions/ClientError');
+require('dotenv').config();
+const Jwt = require('@hapi/jwt');
+
+const users = require('./api/users');
+const UsersService = require('./services/postgres/UsersService');
+const UsersValidator = require('./validator/users');
+
+// authentications
+const authentications = require('./api/authentications');
+const AuthenticationsService = require('./services/postgres/AuthenticationsService');
+const TokenManager = require('./tokenize/TokenManager');
+const AuthenticationsValidator = require('./validator/authentications');
 
 const init = async () => {
   const notesService = new NotesService();
+
+  const usersService = new UsersService();
+  const authenticationsService = new AuthenticationsService();
+
   const server = Hapi.server({
     // port: 3000,
     // host: process.env.NODE_ENV !== "production" ? "localhost" : "0.0.0.0",
     // karna sudah ada env kita pakai kode di bawah ini ya
     port: process.env.PORT,
-    host: "0.0.0.0",
+    host: '0.0.0.0',
     routes: {
       cors: {
-        origin: ["*"],
+        origin: ['*'],
       },
     },
+  });
+
+  // registrasi plugin eksternal
+  await server.register([
+    {
+      plugin: Jwt,
+    },
+  ]);
+
+   // mendefinisikan strategy autentikasi jwt
+  server.auth.strategy('notesapp_jwt', 'jwt', {
+    keys: process.env.ACCESS_TOKEN_KEY,
+    verify: {
+      aud: false,
+      iss: false,
+      sub: false,
+      maxAgeSec: process.env.ACCESS_TOKEN_AGE,
+    },
+    validate: (artifacts) => ({
+      isValid: true,
+      credentials: {
+        id: artifacts.decoded.payload.id,
+      },
+    }),
   });
   // hapus server route
   // server.route(routes);
 
   // mendaftarkan plugins
-  await server.register({
-    plugin: notes,
-    options: {
-      service: notesService,
-      // menambahkan validator
-      validator: NotesValidator,
+  // await server.register({
+  //   plugin: notes,
+  //   options: {
+  //     service: notesService,
+  //     // menambahkan validator
+  //     validator: NotesValidator,
+  //   },
+  // });
+  await server.register([
+    {
+      plugin: notes,
+      options: {
+        service: notesService,
+        validator: NotesValidator,
+      },
     },
-  });
+    {
+      plugin: users,
+      options: {
+        service: usersService,
+        validator: UsersValidator,
+      },
+    },
+    {
+      plugin: authentications,
+      options: {
+        authenticationsService,
+        usersService,
+        tokenManager: TokenManager,
+        validator: AuthenticationsValidator,
+      },
+    },
+  ]);
+
   // menambahkan onPreResponse. ini menghapus try and catch yang ada di handler
-  server.ext("onPreResponse", (request, h) => {
+  server.ext('onPreResponse', (request, h) => {
     // mendapatkan konteks response dari request
     const { response } = request;
 
     // penanganan client error secara internal.
     if (response instanceof ClientError) {
       const newResponse = h.response({
-        status: "fail",
+        status: 'fail',
         message: response.message,
       });
       newResponse.code(response.statusCode);
@@ -54,7 +119,7 @@ const init = async () => {
   });
   await server.start();
   console.log(`Server berjalan pada ${server.info.uri}`);
-  //ubah ketika di deploy
+  // ubah ketika di deploy
   // console.log(`Server berjalan pada http://${process.env.HOST}:${process.env.PORT}`);
 };
 
