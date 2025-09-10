@@ -10,6 +10,7 @@ exports.up = (pgm) => {
   pgm.sql("UPDATE notes SET owner = 'old_notes' WHERE owner IS NULL");
  
   // memberikan constraint foreign key pada owner terhadap kolom id dari tabel users
+// ON DELETE CASCADE maka secara otomatis, hapus juga semua catatan yang dimiliki oleh pengguna tersebut
   pgm.addConstraint('notes', 'fk_notes.owner_users.id', 'FOREIGN KEY(owner) REFERENCES users(id) ON DELETE CASCADE');
 };
  

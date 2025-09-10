@@ -2,6 +2,11 @@
 /* eslint-disable linebreak-style */
 const routes = (handler) => [
   {
+    method: 'GET',
+    path: '/users',
+    handler: handler.getUsersByUsernameHandler,
+  },
+  {
     method: 'POST',
     path: '/users',
     handler: handler.postUserHandler,
@@ -11,6 +16,7 @@ const routes = (handler) => [
     path: '/users/{id}',
     handler: handler.getUserByIdHandler,
   },
+
 ];
 
 module.exports = routes;

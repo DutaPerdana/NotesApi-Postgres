@@ -9,7 +9,7 @@ const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class NotesService {
   // buat constructor dan di dalamnya inisialisasi properti this._pool dengan instance dari package pg.Pool.
-  constructor() {
+  constructor(collaborationService) {
     // ganti pool nya, karna ini mau di deploy
     this._pool = new Pool({
       user: process.env.PGUSER,
@@ -18,6 +18,8 @@ class NotesService {
       password: process.env.PGPASSWORD,
       port: process.env.PGPORT,
     });
+    this._collaborationService = collaborationService;
+  
     // this._pool = new Pool({ ssl: { rejectUnauthorized: false } });
     // this._pool = new Pool({
     //   connectionString: process.env.DATABASE_URL, // <-- Ini Perubahannya!
@@ -68,9 +70,16 @@ class NotesService {
 
   async getNotes(owner) {
     //menambahkan parameter owner
+    // const query = {
+    //   text : 'SELECT * FROM notes WHERE owner = $1', 
+    //   values : [owner],
+    // };
     const query = {
-      text : 'SELECT * FROM notes WHERE owner = $1', 
-      values : [owner],
+      text: `SELECT notes.* FROM notes
+      LEFT JOIN collaborations ON collaborations.note_id = notes.id
+      WHERE notes.owner = $1 OR collaborations.user_id = $1
+      GROUP BY notes.id`,
+      values: [owner],
     };
     const result = await this._pool.query(query);
     // karenna struktur nya beda, dari createdAt menjadi created_at kini kita ubah pakai map yang di setting dari utils index.js
@@ -78,8 +87,15 @@ class NotesService {
   }
 
   async getNoteById(id) {
+    // const query = {
+    //   text: 'SELECT * FROM notes WHERE id = $1',
+    //   values: [id],
+    // };
     const query = {
-      text: 'SELECT * FROM notes WHERE id = $1',
+      text: `SELECT notes.*, users.username
+      FROM notes
+      LEFT JOIN users ON users.id = notes.owner
+      WHERE notes.id = $1`,
       values: [id],
     };
     const result = await this._pool.query(query);
@@ -131,6 +147,32 @@ class NotesService {
     if (note.owner !== owner) {
       throw new AuthorizationError('Anda tidak berhak mengakses resource ini');
     }
+  }
+
+   async verifyNoteAccess(noteId, userId) {
+    try {
+      //periksa apakai ini seorang owner dari notes
+      await this.verifyNoteOwner(noteId, userId);
+    } catch (error) {
+  //jika eror nya notfound eror, masuk ke throw eror. artinya catatan tidak ada/tersedia
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      try {
+      //periksa, jika bukan owner sekarang periksa apakah ini sebagai kolaboration atau tidak, jika tidak langsung ke throw error
+        await this._collaborationService.verifyCollaborator(noteId, userId);
+      } catch {
+        throw error;
+      }
+    }
+  }
+  async getUsersByUsername(username) {
+    const query = {
+      text: 'SELECT id, username, fullname FROM users WHERE username LIKE $1',
+      values: [`%${username}%`],
+    };
+    const result = await this._pool.query(query);
+    return result.rows;
   }
 }
 
