@@ -1,15 +1,19 @@
 const Hapi = require('@hapi/hapi');
 // const routes = require("./routes"); // dihapus karena tidak di gunakan lagi
 // mendaftarkan notes di server hapi
-const notes = require('./api/notes');
-// const NotesService = require('./services/inMemory/NotesService');
-// ganti NotesService ke postgres
-const NotesService = require('./services/postgres/NotesService');
-const NotesValidator = require('./validator/notes');
 const ClientError = require('./exceptions/ClientError');
 require('dotenv').config();
 const Jwt = require('@hapi/jwt');
 
+// const NotesService = require('./services/inMemory/NotesService');
+// ganti NotesService ke postgres
+
+//notes
+const NotesService = require('./services/postgres/NotesService');
+const NotesValidator = require('./validator/notes');
+const notes = require('./api/notes');
+
+//users
 const users = require('./api/users');
 const UsersService = require('./services/postgres/UsersService');
 const UsersValidator = require('./validator/users');
